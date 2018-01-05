@@ -12,6 +12,13 @@ enum T_
  T_MusterVorgb,
  T_rueckfragen,
  T_autokonfschreib,
+	T_fbusr_k,
+	T_fbusr_l,
+	T_fbpwd_k,
+	T_fbpwd_l,
+	T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt,
+	T_verwendet_fuer_die_Fritzbox_das_Passwort_string,
+	T_nicht_erkannt,
  T_MAX
 }; // enum T_
 
@@ -28,6 +35,20 @@ char const *DPROG_T[T_MAX+1][SprachZahl]={
  {"rueckfragen()","callbacks()"},
  // T_autokonfschreib
  {"autokonfschreib()","autoconfwrite()"},
+	// T_fbusr_k,
+	{"fbusr","fbusr"},
+	// T_fbusr_l,
+	{"fbusr","fbusr"},
+	// T_fbpwd_k,
+	{"fbpwd","fbpwd"},
+	// T_fbpwd_l,
+	{"fbpwd","fbpwd"},
+	// T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt
+	{"verwendet fuer die Fritzbox den Benutzer <string> anstatt","takes the user <string> for the fritzbox instead of"},
+	// T_verwendet_fuer_die_Fritzbox_das_Passwort_string
+	{"verwendet fuer die Fritzbox das Passwort <string>","takes the password <string< for the fritzbox"},
+	// T_nicht_erkannt
+	{" nicht erkannt!"," not identified!"},
  {"",""}
 }; // char const *DPROG_T[T_MAX+1][SprachZahl]=
 
@@ -35,6 +56,7 @@ class TxB Tx((const char* const* const* const*)DPROG_T);
 
 uchar ZDB=0; // fuer Zusatz-Debugging (SQL): ZDB 1, sonst: 0
 const char *logdt="/var/log/" DPROG "vorgabe.log";//darauf wird in kons.h verwiesen; muss dann auf lgp zeigen;
+const string& pwk = "4893019320jfdksalö590ßs89d0qÃ9m0943Ã09Ãax"; // fuer Antlitzaenderung
 
 using namespace std;
 
@@ -95,6 +117,56 @@ void hhcl::lieskonfein()
 int hhcl::getcommandline()
 {
  Log(violetts+"getcommandline()"+schwarz);
+	// hier wird die Befehlszeile ueberprueft:
+ opts.push_back(/*2*/optioncl(T_fbusr_k,T_fbusr_l,&Tx, T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt,0,&fbusr,psons,&agcnfA, "fbusr",&obkschreib));
+ opts.push_back(/*2*/optioncl(T_fbpwd_k,T_fbpwd_l,&Tx, T_verwendet_fuer_die_Fritzbox_das_Passwort_string,0,&fbpwd,psons,&agcnfA,"fbpwd",&obkschreib));
+	for(;optslsz<opts.size();optslsz++) {
+		for(size_t i=0;i<argcmv.size();i++) {
+			if (opts[optslsz].pruefpar(&argcmv,&i,&obhilfe,Tx.lgn)) {
+			 if (opts[optslsz].kurzi==T_fbpwd_k) {
+				 const string pwdstr=XOR(fbpwd,pwk);
+				 agcnfA.setze(string(Tx[T_fbpwd_k]),pwdstr);
+			 } // 				if (opts[optslsz].kurzi==T_mpwd_k)
+			 break;
+			} //       if (opts[optslsz].pruefpar(&argcmv,&i,&obhilfe,Tx.lgn))
+		} // for(size_t i=0;i<argcmv.size();i++) 
+	} //   for(;optslsz<opts.size();optslsz++)
+	if (nrzf||obhilfe>2) rzf=0; // 3 oder 4
+	for(size_t i=0;i<argcmv.size();i++) {
+		if (!argcmv[i].agef) {
+			::Log(rots+"Parameter: "+gruen+argcmv[i].argcs+rot+Tx[T_nicht_erkannt]+schwarz,1,1);
+			if (!obhilfe) obhilfe=1;
+		} //     if (!argcmv[i].agef)
+	} //   for(size_t i=0;i<argcmv.size();i++)
+	/*//
+		if (altlogdname!=logdname || altlogvz!=logvz) {
+		if (!logdname.empty()) {
+		loggespfad=logvz+vtz+logdname;
+		logdt=&loggespfad.front();
+		agcnfA.setze("logdname",logdname);
+		agcnfA.setze("logvz",logvz);
+		obkschreib=1;
+		}
+		}
+	 */
+	/*//
+		if (altckzl!=cklingelzahl || rzf) {
+		agcnfA.setze("cklingelzahl",cklingelzahl); // zum Schreiben in die /usr/local/sbin/<DPROG>.conf in autokonfschreib
+		capizukonf=1;
+		obkschreib=1;
+		}
+		if (althkzl!=hklingelzahl || rzf) {
+		agcnfA.setze("hklingelzahl",hklingelzahl);
+		hylazukonf=1;
+		obkschreib=1;
+		}
+	 */
+
+	stringstream erkl;
+	erkl<<blau<<"gibt die Fritzbox-Einstellungen aus"<<schwarz;
+	if (zeighilfe(&erkl)) 
+		return 1;
+	Log(violetts+Txk[T_Ende]+"getcommandline()"+schwarz);
  return 0;
 } // int hhcl::getcommandline
 
@@ -135,6 +207,7 @@ int tuwas()
 	tr64cl tr64("libelle17","bach17raga");
 	//	tr64cl tr64("","");
 	string buffer;
+	string kopfi[]={"deviceType","friendlyName","manufacturer","manufacturerURL","modelDescription","modelName","modelNumber","modelURL","UDN"};
 	string grund="http://fritz.box:49000";
 	holurl(grund+"/tr64desc.xml",&buffer);
 	size_t pos=0;
@@ -142,6 +215,14 @@ int tuwas()
 	int zeigalle=0;
 	mdatei logf("fbausg.txt",ios::out,0);
 	int oblog=logf.is_open();
+	for(size_t ind=0;ind<sizeof kopfi/sizeof *kopfi;ind++) {
+		string kbuf;
+		holraus(buffer,kopfi[ind],&kbuf);
+		if (zeigalle) {
+			caus<<"  "<<kopfi[ind]<<": "<<rot<<kbuf<<schwarz<<endl;
+		}
+		if (oblog) logf<<"  "<<kopfi[ind]<<": "<<kbuf<<endl;
+	}
 	while ((pos=holraus(buffer,"service",&serviceh,pos))) {
 		if (zeigalle) {
 			caus<<endl;
@@ -201,9 +282,22 @@ int tuwas()
 					if (oblog) logf<<"   "<<argdir<<" "<<argname<<endl; 
 				}
 			}
+			string ubuf;
+			int obtr64=0;
 			if (keinin && action.find("Get")!=string::npos) {
-				string ubuf;
+				obtr64=1;
 				tr64.fragurl(controlURL,serviceType,action,&ubuf);
+				/*
+			} else if (action=="GetSpecificDeviceInfos") {
+				obtr64=1;
+				svec iname; iname<<"NewAIN";
+				svec ival; ival<<"0";
+				tr64.fragurl(controlURL,serviceType,action,&ubuf,&iname,&ival);
+				cout<<violett<<ubuf<<schwarz<<endl;
+				exit(0);
+				*/
+			}
+			if (obtr64) {
 				if (ubuf.find("invalid action")==string::npos) {
 					for(size_t ausnr=0;ausnr<ausv.size();ausnr++) {
 						string ergeb;

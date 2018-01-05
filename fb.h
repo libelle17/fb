@@ -4,6 +4,8 @@ class hhcl:public hcl
  private:
  public:
   uchar obvi=0; // ob Konfigurationsdatei editiert werden soll
+	string fbusr; // User für Fritzbox
+	string fbpwd; // Password für Fritzbox
  private:
   void lgnzuw();
  public:
