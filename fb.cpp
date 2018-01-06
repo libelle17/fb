@@ -205,7 +205,7 @@ void hhcl::zeigueberschrift()
 int tuwas()
 {
 	tr64cl tr64("libelle17","bach17raga");
-	//	tr64cl tr64("","");
+//	tr64cl tr64("","");
 	string buffer;
 	string kopfi[]={"deviceType","friendlyName","manufacturer","manufacturerURL","modelDescription","modelName","modelNumber","modelURL","UDN"};
 	string grund="http://fritz.box:49000";
@@ -292,6 +292,18 @@ int tuwas()
 				obtr64=1;
 				svec iname; iname<<"NewAIN";
 				svec ival; ival<<"0";
+				tr64.fragurl(controlURL,serviceType,action,&ubuf,&iname,&ival);
+				cout<<violett<<ubuf<<schwarz<<endl;
+				exit(0);
+				*/
+				/*
+					 // controlURL: /upnp/control/x_voip
+					 // serviceType: urn:dslforum-org:service:X_VoIP:1
+					 // action:      X_AVM-DE_DialNumber
+			} else if (action=="X_AVM-DE_DialNumber") {
+				obtr64=1;
+				svec iname; iname<<"NewX_AVM-DE_PhoneNumber";
+				svec ival; ival<<"#96*2*";
 				tr64.fragurl(controlURL,serviceType,action,&ubuf,&iname,&ival);
 				cout<<violett<<ubuf<<schwarz<<endl;
 				exit(0);
