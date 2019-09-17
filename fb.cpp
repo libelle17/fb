@@ -1,40 +1,73 @@
+// '//α' oder '//ω' als Kommentar sind nur fuer die Verwendung dieses Programms als Programmvorlage wichtig
+const double& versnr= //α
+#include "versdt"
+;
 #include "kons.h"
-#include "DB.h"
-#define VOMHAUPTCODE
+#include <tiffio.h>
+#define VOMHAUPTCODE // um Funktionsdefinition manchmal mit "__attribute__((weak)) " versehen zu können //ω
 #include "fb.h"
 #include "tr64.h"
-
-enum T_
+// fuer verschiedene Sprachen //α
+char const *DPROG_T[T_MAX+1][SprachZahl]=
 {
- T_zu_schreiben,
- T_VorgbAllg,
- T_VorgbSpeziell,
- T_MusterVorgb,
- T_rueckfragen,
- T_autokonfschreib,
-	T_fbusr_k,
-	T_fbusr_l,
-	T_fbpwd_k,
-	T_fbpwd_l,
-	T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt,
-	T_verwendet_fuer_die_Fritzbox_das_Passwort_string,
-	T_nicht_erkannt,
- T_MAX
-}; // enum T_
-
-char const *DPROG_T[T_MAX+1][SprachZahl]={
- // T_zu_schreiben
- {"zu schreiben: ","must write: "},
- // T_VorgbAllg
- {"VorgbAllg()","generalprefs()"},
- // T_VorgbSpeziell
- {"VorgbSpeziell()","specialprefs()"},
- // T_MusterVorgb
- {"MusterVorgb()","sampleprefs"},
- // T_rueckfragen
- {"rueckfragen()","callbacks()"},
- // T_autokonfschreib
- {"autokonfschreib()","autoconfwrite()"},
+	// T_virtVorgbAllg
+	{"virtVorgbAllg()","virtgeneralprefs()"},
+	// T_pvirtVorgbSpeziell
+	{"pvirtVorgbSpeziell()","pvirtspecialprefs()"},
+	// T_virtMusterVorgb
+	{"virtMusterVorgb()","virtsampleprefs"},
+	// T_pvirtvorrueckfragen
+	{"pvirtvorrueckfragen()","pvirtbeforecallbacks()"},
+	// T_virtrueckfragen
+	{"virtrueckfragen()","virtcallbacks()"},
+	// T_virtpruefweiteres
+	{"virtpruefweiteres()","virtcheckmore()"},
+	// T_virtmacherkl_Tx_lgn
+	{"pvirtmacherkl, Tx.lgn: ","pvirtmakeexpl, Tx.lgn: "},
+	//	T_Fehler_beim_Pruefen_von
+	{"Fehler beim Pruefen von: ","Error while examining: "},
+	// T_st_k
+	{"st","st"},
+	// T_stop_l
+	{"stop","stop"},
+	// T_DPROG_anhalten
+	{DPROG " anhalten","stop " DPROG},
+	// T_anhalten
+	{"anhalten()","stop()"},
+	// T_Cron_Aufruf_von
+	{"Cron-Aufruf von '","cron call of '"},
+	// T_gestoppt
+	{"' gestoppt.","' stopped."},
+	// T_n_k
+	{"n","n"},
+	// T_dszahl_l
+	{"dszahl","reccount"},
+	// T_Zahl_der_aufzulistenden_Datensaetze_ist_zahl_statt
+	{"Zahl der aufzulistenden Datensaetze = <zahl> statt","No. of listed entries = <no> instead of"},
+	// T_Datenbank_nicht_initialisierbar_breche_ab
+	{"Datenbank nicht initialisierbar, breche ab","database init failed, stopping"},
+	// T_pvirtvorpruefggfmehrfach,
+	{"pvirtvorpruefggfmehrfach()","pvirtbeforecheckmultiple()"},
+	// T_pvirtfuehraus,
+	{"pvirtfuehraus()","pvirtexecute()"},
+	// T_in_pvirtfuehraus_pidw,
+	{"in pvirtfuehraus(), pidw","in pvirtexecute(), pidw"},
+	// T_virttesterg,
+	{"virttesterg()","virtcheckresult()"},
+	// T_virtzeigversion,
+	{"virtzeigversion()","virtshowversion()"},
+	// T_virtzeigueberschrift, 
+	{"virtzeigueberschrift()","virtshowheadline()"},
+	// T_Fuege_ein
+	{"Fuege ein: ","Inserting: "}, //ω
+	// T_VorgbAllg
+	{"VorgbAllg()","generalprefs()"},
+	// T_VorgbSpeziell
+	{"VorgbSpeziell()","specialprefs()"},
+	// T_MusterVorgb
+	{"MusterVorgb()","sampleprefs"},
+	// T_rueckfragen
+	{"rueckfragen()","callbacks()"},
 	// T_fbusr_k,
 	{"fbusr","fbusr"},
 	// T_fbusr_l,
@@ -47,160 +80,170 @@ char const *DPROG_T[T_MAX+1][SprachZahl]={
 	{"verwendet fuer die Fritzbox den Benutzer <string> anstatt","takes the user <string> for the fritzbox instead of"},
 	// T_verwendet_fuer_die_Fritzbox_das_Passwort_string
 	{"verwendet fuer die Fritzbox das Passwort <string>","takes the password <string< for the fritzbox"},
-	// T_nicht_erkannt
-	{" nicht erkannt!"," not identified!"},
- {"",""}
+	// T_Fritzbox_Benutzer
+	{"Fritzbox-Benutzer","fritzbox user"},
+	// T_Fritzbox_Passwort
+	{"Fritzbox-Passwort","fritzbox password"},
+	// T_Ermittelt_die_moeglichen_Tr_064_Befehle_und_zeigt_sie_an,
+	{"Ermittelt die möglichen Tr-064-Befehle der verwendeten Fritzbox und zeigt sie an.",
+		"Finds out the possible Tr-064 commands of the current fritzbox and displays them."},
+	{"",""} //α
 }; // char const *DPROG_T[T_MAX+1][SprachZahl]=
 
 class TxB Tx((const char* const* const* const*)DPROG_T);
+const char sep = 9; // geht auch: "[[:blank:]]"
+const char *logdt="/var/log/" DPROG "vorgabe.log";//darauf wird in kons.h verwiesen;
+pidvec pidw; // wird zweimal verwendet, um auf Kindprozesse zu warten: in wegfaxen (auf die Faxarten) und in pvirtfueraus (auf korrigierefbox, -capi und -hyla
+const unsigned ktage=1; // kurzes Intervall fuer Faxtabellenkorrektur, 1 Tag
+const unsigned mtage=30; // mittleres Intervall fuer Faxtabellenkorrektur, 1 Monat
+const unsigned ltage=73000; // langes Intervall fuer Faxtabellenkorrektur, 200 Jahre
 
-uchar ZDB=0; // fuer Zusatz-Debugging (SQL): ZDB 1, sonst: 0
-const char *logdt="/var/log/" DPROG "vorgabe.log";//darauf wird in kons.h verwiesen; muss dann auf lgp zeigen;
-const string& pwk = "4893019320jfdksalö590ßs89d0qÃ9m0943Ã09Ãax"; // fuer Antlitzaenderung
-
-using namespace std;
-
-hhcl::hhcl(const int argc, const char *const *const argv):hcl(argc,argv)
+using namespace std; //ω
+hhcl::hhcl(const int argc, const char *const *const argv):hcl(argc,argv,DPROG,/*mitcron*/0) //α
 {
-} // hhcl::hhcl
-
-hhcl::~hhcl()
+	hLog(violetts+"hhcl::hhcl()"+schwarz);
+	// mitpids=1;
+ // mitcron=0; //ω
+} // hhcl::hhcl //α
+// Hier neue Funktionen speichern: //ω
+//α
+// aufgerufen in lauf
+void hhcl::virtVorgbAllg()
 {
-} // hhcl::~hhcl
+	hLog(violetts+Tx[T_virtVorgbAllg]+schwarz); //ω
+	hcl::virtVorgbAllg(); //α
+} // void hhcl::virtVorgbAllg
 
-// wird aufgerufen in: rueckfragen, als virtualle Funktion von hcl::gcl0()
-void hhcl::lgnzuw()
+// aufgerufen in lauf
+void hhcl::pvirtVorgbSpeziell()
 {
- hcl::lgnzuw();
- Txd.lgn=Tx.lgn=Txk.lgn;
-} // void hhcl::lgnzuw
+	hLog(violetts+Tx[T_pvirtVorgbSpeziell]+schwarz);
+	virtMusterVorgb(); //ω
+} // void hhcl::pvirtVorgbSpeziell
 
-// wird aufgerufen in: main
-void hhcl::getcommandl0()
+// aufgerufen in lauf
+void hhcl::virtinitopt()
 {
- if (obverb) {
-  cout<<violett<<"getcommandl0()"<<schwarz<<endl;
-  obverb=0;
- }
- // Reihenfolge muss koordiniert werden mit lieskonfein und rueckfragen
- const char* const sarr[]={"language"};
- agcnfA.initd(sarr,sizeof sarr/sizeof *sarr);
- gcl0();
-} // getcommandl0
+	hLog(violetts+"virtinitopt()"+schwarz); //ω
+	opn<<new optcl(/*pptr*/&anhl,/*art*/puchar,T_st_k,T_stop_l,/*TxBp*/&Tx,/*Txi*/T_DPROG_anhalten,/*wi*/1,/*Txi2*/-1,/*rottxt*/nix,/*wert*/1,/*woher*/1); //α //ω
+	opn<<new optcl(/*pptr*/&dszahl,/*art*/pdez,T_n_k,T_dszahl_l,/*TxBp*/&Tx,/*Txi*/T_Zahl_der_aufzulistenden_Datensaetze_ist_zahl_statt,/*wi*/1,/*Txi2*/-1,/*rottxt*/nix,/*wert*/-1,/*woher*/1); //α //ω
+	opn<<new optcl(/*pname*/"fbusr",/*pptr*/&fbusr,/*art*/pstri,T_fbusr_k,T_fbusr_l,/*TxBp*/&Tx,/*Txi*/T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt,/*wi*/1,/*Txi2*/-1,/*rottxt*/string(),/*wert*/-1,/*woher*/1);
+	opn<<new optcl(/*pname*/"fbpwd",/*pptr*/&fbpwd,/*art*/ppwd,T_fbpwd_k,T_fbpwd_l,/*TxBp*/&Tx,/*Txi*/T_verwendet_fuer_die_Fritzbox_das_Passwort_string,/*wi*/1,/*Txi2*/-1,/*rottxt*/string(),/*wert*/-1,/*woher*/1);
+	hcl::virtinitopt(); //α
+} // void hhcl::virtinitopt
 
-void hhcl::VorgbAllg()
+// aufgerufen in lauf
+void hhcl::pvirtmacherkl()
 {
- Log(violetts+Tx[T_VorgbAllg]+schwarz);
-} // void hhcl::VorgbAllg
+	hLog(violetts+Tx[T_virtmacherkl_Tx_lgn]+schwarz+ltoan(Tx.lgn));
+//	erkl<<violett<<DPROG<<blau<<Txk[T_tut_dieses_und_jenes]<<schwarz; //ω 
+	erkl<<blau<<Tx[T_Ermittelt_die_moeglichen_Tr_064_Befehle_und_zeigt_sie_an]<<schwarz;
+} // void hhcl::pvirtmacherkl //α
+//ω
+//α
 
-void hhcl::VorgbSpeziell()
+// aufgerufen in lauf
+void hhcl::virtMusterVorgb()
 {
- Log(violetts+Tx[T_VorgbSpeziell]+schwarz);
- MusterVorgb();
-} // void hhcl::VorgbSpeziell
-
-void hhcl::MusterVorgb()
-{
- Log(violetts+Tx[T_MusterVorgb]+schwarz);
+	hLog(violetts+Tx[T_virtMusterVorgb]+schwarz); //ω
+	hcl::virtMusterVorgb(); //α
 } // void hhcl::MusterVorgb
 
-// wird aufgerufen in: main
-void hhcl::lieskonfein()
+// aufgerufen in lauf
+void hhcl::pvirtvorzaehler()
+{ //ω
+} // void hhcl::virtvorzaehler //α
+//ω
+// aufgerufen in lauf //α
+void hhcl::virtzeigversion(const string& ltiffv/*=string()*/)
 {
- // hcl::lieskonfein();
- lfd++;
- setzlog();
- if (nrzf) rzf=0;
-} // void hhcl::lieskonfein
+	hLog(violetts+Tx[T_virtzeigversion]+schwarz);
+	hcl::virtzeigversion(ltiffv);  //ω
+} // void hhcl::virtzeigversion //α
+//ω
+//α
+// aufgerufen in lauf
+void hhcl::pvirtvorrueckfragen()
+{
+	hLog(violetts+Tx[T_pvirtvorrueckfragen]+schwarz); //ω
+} // void hhcl::pvirtvorrueckfragen //α
 
-//wird aufgerufen in: main
-int hhcl::getcommandline()
+void hhcl::neurf()
 {
- Log(violetts+"getcommandline()"+schwarz);
-	// hier wird die Befehlszeile ueberprueft:
- opts.push_back(/*2*/optioncl(T_fbusr_k,T_fbusr_l,&Tx, T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt,0,&fbusr,psons,&agcnfA, "fbusr",&obkschreib));
- opts.push_back(/*2*/optioncl(T_fbpwd_k,T_fbpwd_l,&Tx, T_verwendet_fuer_die_Fritzbox_das_Passwort_string,0,&fbpwd,psons,&agcnfA,"fbpwd",&obkschreib));
-	for(;optslsz<opts.size();optslsz++) {
-		for(size_t i=0;i<argcmv.size();i++) {
-			if (opts[optslsz].pruefpar(&argcmv,&i,&obhilfe,Tx.lgn)) {
-			 if (opts[optslsz].kurzi==T_fbpwd_k) {
-				 const string pwdstr=XOR(fbpwd,pwk);
-				 agcnfA.setze(string(Tx[T_fbpwd_k]),pwdstr);
-			 } // 				if (opts[optslsz].kurzi==T_mpwd_k)
-			 break;
-			} //       if (opts[optslsz].pruefpar(&argcmv,&i,&obhilfe,Tx.lgn))
-		} // for(size_t i=0;i<argcmv.size();i++) 
-	} //   for(;optslsz<opts.size();optslsz++)
-	if (nrzf||obhilfe>2) rzf=0; // 3 oder 4
-	for(size_t i=0;i<argcmv.size();i++) {
-		if (!argcmv[i].agef) {
-			::Log(rots+"Parameter: "+gruen+argcmv[i].argcs+rot+Tx[T_nicht_erkannt]+schwarz,1,1);
-			if (!obhilfe) obhilfe=1;
-		} //     if (!argcmv[i].agef)
-	} //   for(size_t i=0;i<argcmv.size();i++)
-	/*//
-		if (altlogdname!=logdname || altlogvz!=logvz) {
-		if (!logdname.empty()) {
-		loggespfad=logvz+vtz+logdname;
-		logdt=&loggespfad.front();
-		agcnfA.setze("logdname",logdname);
-		agcnfA.setze("logvz",logvz);
-		obkschreib=1;
+	for(auto omit=opn.schl.end();omit!=opn.schl.begin();) {
+		omit--;
+		if ((*omit)->Txrf!=-1) {
+		 const char* const text=(*(*omit)->TxBp)[(*omit)->Txrf];
+		cout<<text<<endl;
 		}
-		}
-	 */
-	/*//
-		if (altckzl!=cklingelzahl || rzf) {
-		agcnfA.setze("cklingelzahl",cklingelzahl); // zum Schreiben in die /usr/local/sbin/<DPROG>.conf in autokonfschreib
-		capizukonf=1;
-		obkschreib=1;
-		}
-		if (althkzl!=hklingelzahl || rzf) {
-		agcnfA.setze("hklingelzahl",hklingelzahl);
-		hylazukonf=1;
-		obkschreib=1;
-		}
-	 */
-
-	stringstream erkl;
-	erkl<<blau<<"gibt die Fritzbox-Einstellungen aus"<<schwarz;
-	if (zeighilfe(&erkl)) 
-		return 1;
-	Log(violetts+Txk[T_Ende]+"getcommandline()"+schwarz);
- return 0;
-} // int hhcl::getcommandline
-
-// wird aufgerufen in: main
-void hhcl::rueckfragen()
+	}
+} // void hhcl::neurf
+ //ω
+// aufgerufen in lauf //α
+void hhcl::virtrueckfragen()
 {
- Log(violetts+Tx[T_rueckfragen]+schwarz);
- if (rzf) {
-  int lfd=-1;
-  const char *const locale = setlocale(LC_CTYPE,"");
-  if (langu.empty()) if (locale) if (strchr("defi",locale[0])) langu=locale[0];
-  vector<string> sprachen={"e","d"/*,"f","i"*/};
-  if (agcnfA[++lfd].wert.empty()||rzf) {
-   langu=Tippstrs(sprachstr.c_str()/*"Language/Sprache/Lingue/Lingua"*/,&sprachen,&langu);
-   lgnzuw();
-   agcnfA[lfd].setze(&langu);
-  } // if (agcnfA
- } // if (rzf)
-} // void hhcl::rueckfragen()
-
-// wird aufgerufen in: main
-void hhcl::autokonfschreib()
+	hLog(violetts+Tx[T_virtrueckfragen]+", rzf: "+blau+ltoan(rzf)+schwarz);
+	if (fbusr.empty() || fbpwd.empty()) rzf=1;
+	if (rzf) { //ω
+		fbusr=Tippstr(Tx[T_Fritzbox_Benutzer],&fbusr);
+		fbpwd.clear();
+		do {
+			fbpwd=Tippstr(string(Tx[T_Fritzbox_Passwort])+Txk[T_fuer_Benutzer]+dblau+fbusr+schwarz+"'"/*,&smtppwd*/);
+			fbpwd=Tippstr(string(Tx[T_Fritzbox_Passwort])+Txk[T_fuer_Benutzer]+dblau+fbusr+schwarz+"'"+" ("+Txk[T_erneute_Eingabe]+")"/*,&mpw2*/);
+		} while (fbpwd!=fbpwd);
+	} // if (rzf) //α
+	hcl::virtrueckfragen();
+	//// opn.oausgeb(rot);
+} // void hhcl::virtrueckfragen
+//ω
+//α
+// aufgerufen in lauf
+void hhcl::virtpruefweiteres()
 {
- Log(violetts+Tx[T_autokonfschreib]+schwarz+", "+Tx[T_zu_schreiben]+((rzf||obkschreib)?Txk[T_ja]:Txk[T_nein]));
- if (rzf||obkschreib) {
- } // if (rzf||obkschreib)
-} // void hhcl::autokonfschreib
+	hLog(violetts+Tx[T_virtpruefweiteres]+schwarz); //ω
+	// if (initDB()) exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab])); //α //ω
+	hcl::virtpruefweiteres(); // z.Zt. leer //α
+} // void hhcl::virtpruefweiteres
 
-// wird aufgerufen in: main
-void hhcl::zeigueberschrift()
+// aufgerufen in lauf
+void hhcl::virtzeigueberschrift()
+{ 
+	hLog(violetts+Tx[T_virtzeigueberschrift]+schwarz); //ω
+	// hier ggf. noch etwas an 'uebers' anhaengen //α
+	hcl::virtzeigueberschrift();
+} // void hhcl::virtzeigueberschrift
+//ω
+//α
+// Parameter -st / --stop
+// aufgerufen in: main
+void hhcl::anhalten()
 {
- char buf[20]; snprintf(buf,sizeof buf,"%.5f",versnr);
- ::Log(schwarzs+Txk[T_Programm]+blau+mpfad+schwarz+", V: "+blau+buf+schwarz,1,1);
-} // void hhcl::zeigueberschrift
+	hLog(violetts+Tx[T_anhalten]+schwarz);
+	// crontab
+	/*
+	setztmpcron();
+	for(int iru=0;iru<1;iru++) {
+		const string befehl=
+			"bash -c 'grep \""+saufr[iru]+"\" -q <(crontab -l)&&{ crontab -l|sed \"/"+zsaufr[iru]+"/d\">"+tmpcron+";crontab "+tmpcron+";};:'";
+		systemrueck(befehl,obverb,oblog,*//*rueck=*//*0,*//*obsudc=*//*1);
+	} // 	for(int iru=0;iru<2;iru++)
+  */
+	pruefcron("0"); // soll vor Log(Tx[T_Verwende ... stehen
+	fLog(blaus+Tx[T_Cron_Aufruf_von]+schwarz+mpfad+blau+Tx[T_gestoppt]+schwarz,1,oblog); //ω
+} // void hhcl::anhalten() //α
+//ω
+//α
+void hhcl::pvirtnachvi()
+{ //ω
+} //α
+
+// aufgerufen in lauf
+void hhcl::pvirtvorpruefggfmehrfach()
+{
+	hLog(violetts+Tx[T_pvirtvorpruefggfmehrfach]+schwarz);
+	// if (initDB()) exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));  //ω
+} // void hhcl::pvirtvorpruefggfmehrfach //α
+//ω
 
 int tuwas()
 {
@@ -341,32 +384,64 @@ int tuwas()
 } // int tuwas()
 
 
-int main(int argc,char** argv)
+void hhcl::pvirtfuehraus() //α
+{ 
+	hLog(violetts+Tx[T_pvirtfuehraus]+schwarz); //ω
+	tuwas();
+} // void hhcl::pvirtfuehraus  //α
+
+// aufgerufen in lauf
+void hhcl::virtschlussanzeige()
+{  
+	hLog(violetts+Txk[T_virtschlussanzeige]+schwarz); //ω
+	hcl::virtschlussanzeige(); //α
+} // void hhcl::virtschlussanzeige
+ 
+// aufgerufen in: main und pruefcapi
+void hhcl::virtautokonfschreib()
 {
- hhcl hhi(argc,argv); // hiesige Hauptinstanz
- /*//
- if (argc>1) {
- } // (argc>1)
- */
- hhi.getcommandl0(); // anfangs entscheidende Kommandozeilenparameter abfragen
- hhi.VorgbAllg();
- if (hhi.obhilfe==3) { // Standardausgabe gewaehrleisten
-  hhi.MusterVorgb();
- } else {
-  hhi.VorgbSpeziell(); // die Vorgaben, die in einer zusaetzlichen Datei mit einer weiteren Funktion "void hhcl::VorgbSpeziell()" ueberladbar sind
-  hhi.lieskonfein();
- } // if (hhi.obhilfe==3)
- hhi.lieszaehlerein(&hhi.aufrufe,&hhi.tagesaufr,&hhi.monatsaufr,&hhi.laufrtag);
+//// const int altobverb=obverb; obverb=1;
+	hLog(violetts+Txk[T_autokonfschreib]+schwarz+", "+Txk[T_zu_schreiben]+((rzf||hccd.obzuschreib)?Txk[T_ja]:Txk[T_nein])); //ω
+	struct stat kstat{0}; //α
+	if (lstat(akonfdt.c_str(),&kstat)) {
+		caus<<"Setze obzuschreib, da "<<akonfdt<<" nicht da"<<endl;
+		hccd.obzuschreib=1;
+	}
+	if (rzf||hccd.obzuschreib||kschreib) {
+		hLog(gruens+Txk[T_schreibe_Konfiguration]+schwarz);
+		// restliche Erklaerungen festlegen
+		////    agcnfA.setzbem("language",sprachstr);
+    obverb=2;
+		hcl::virtautokonfschreib(); //ω
+	} // if (rzf||hccd.obzuschreib) //α
+//// obverb=altobverb;
+} // void hhcl::virtautokonfschreib
 
- if (hhi.getcommandline())
-  exit(8);
- if (hhi.obvi) hhi.dovi();
- if (hhi.zeigvers) {
-   hhi.zeigversion();
- } // if (hhi.zeigvers)
+hhcl::~hhcl() 
+{ //ω
+} // hhcl::~hhcl //α
 
- tuwas();
- hhi.autokonfschreib();
- hhi.schlussanzeige();
- return 0;
-} // int main
+// wird nur im Fall obhilfe==3 nicht aufgerufen
+void hhcl::virtlieskonfein()
+{
+////	const int altobverb{obverb}; obverb=1;
+	hLog(violetts+Txk[T_virtlieskonfein]+schwarz); //ω
+	hcl::virtlieskonfein(); //α //ω
+	hLog(violetts+Txk[T_Ende]+Txk[T_virtlieskonfein]+schwarz); //α
+////	obverb=altobverb;
+} // void hhcl::virtlieskonfein() //ω
+int main(int argc,char** argv) //α
+{
+	if (argc>1) { //ω
+	} //α
+	hhcl hhi(argc,argv); // hiesige Hauptinstanz, mit lngzuw, setzlog und pruefplatte
+	hhi.lauf(); // Einleitungsteil mit virtuellen Funktionen, 
+	// mit virtVorgbAllg,pvirtVorgbSpeziell,initopt,parsecl,pvirtmacherkl,zeighilfe,virtlieskonfein,verarbeitkonf,lieszaehlerein,MusterVorgb,dovi,dovs,virtzeigversion
+	// virtautokonfschreib,update,
+	return hhi.retu;
+} // int main 
+
+void hhcl::virttesterg()
+{
+	hLog(violetts+Txk[T_virttesterg]+schwarz);
+} //ω
