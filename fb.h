@@ -20,7 +20,7 @@ enum T_
 	T_dszahl_l,
 	T_Zahl_der_aufzulistenden_Datensaetze_ist_zahl_statt,
 	T_Datenbank_nicht_initialisierbar_breche_ab,
-	T_pvirtvorpruefggfmehrfach,
+	T_pvirtnachrueckfragen,
 	T_pvirtfuehraus,
 	T_in_pvirtfuehraus_pidw,
 	T_virttesterg,
@@ -30,7 +30,6 @@ enum T_
 	T_VorgbAllg,
 	T_VorgbSpeziell,
 	T_MusterVorgb,
-	T_rueckfragen,
 	T_fbusr_k,
 	T_fbusr_l,
 	T_fbpwd_k,
@@ -82,7 +81,7 @@ class hhcl:public hcl
 		void virtrueckfragen();
 		void neurf();
 		void pvirtnachvi();
-		void pvirtvorpruefggfmehrfach();
+		void pvirtnachrueckfragen();
 		void virtpruefweiteres();
 		void virtzeigueberschrift();
 		void loeschenix();

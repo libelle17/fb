@@ -46,8 +46,8 @@ char const *DPROG_T[T_MAX+1][SprachZahl]=
 	{"Zahl der aufzulistenden Datensaetze = <zahl> statt","No. of listed entries = <no> instead of"},
 	// T_Datenbank_nicht_initialisierbar_breche_ab
 	{"Datenbank nicht initialisierbar, breche ab","database init failed, stopping"},
-	// T_pvirtvorpruefggfmehrfach,
-	{"pvirtvorpruefggfmehrfach()","pvirtbeforecheckmultiple()"},
+	// T_pvirtnachrueckfragen,
+	{"pvirtnachrueckfragen()","pvirtnachrueckfragen()"},
 	// T_pvirtfuehraus,
 	{"pvirtfuehraus()","pvirtexecute()"},
 	// T_in_pvirtfuehraus_pidw,
@@ -66,8 +66,6 @@ char const *DPROG_T[T_MAX+1][SprachZahl]=
 	{"VorgbSpeziell()","specialprefs()"},
 	// T_MusterVorgb
 	{"MusterVorgb()","sampleprefs"},
-	// T_rueckfragen
-	{"rueckfragen()","callbacks()"},
 	// T_fbusr_k,
 	{"fbusr","fbusr"},
 	// T_fbusr_l,
@@ -124,11 +122,13 @@ void hhcl::pvirtVorgbSpeziell()
 // aufgerufen in lauf
 void hhcl::virtinitopt()
 {
+	// Kopiervorlage:
+	// opn<<new optcl(/*pname*/"pname",/*pptr*/pptr,/*art*/pstri,/*kurzi*/T_kurz_k,/*langi*/T_lang_l,/*TxBp*/&Tx,/*Txi*/T_Option_erklaert,/*wi*/1,/*Txi2*/T_Option_Nachtext,/*rottxt*/nix,/*wert*/1,/*woher*/!pname.empty(),/*Txtrf*/{},/*obno*/1,/*refstr*/0,/*obfragz*/0,/*fnobfragz*/0,/*fnnachhz*/&hcl::fu1,/*fnvorhz*/0,/*sonderrf*/0,/*fngueltigz*/0)
 	hLog(violetts+"virtinitopt()"+schwarz); //ω
 	opn<<new optcl(/*pptr*/&anhl,/*art*/puchar,T_st_k,T_stop_l,/*TxBp*/&Tx,/*Txi*/T_DPROG_anhalten,/*wi*/1,/*Txi2*/-1,/*rottxt*/nix,/*wert*/1,/*woher*/1); //α //ω
 	opn<<new optcl(/*pptr*/&dszahl,/*art*/pdez,T_n_k,T_dszahl_l,/*TxBp*/&Tx,/*Txi*/T_Zahl_der_aufzulistenden_Datensaetze_ist_zahl_statt,/*wi*/1,/*Txi2*/-1,/*rottxt*/nix,/*wert*/-1,/*woher*/1); //α //ω
-	opn<<new optcl(/*pname*/"fbusr",/*pptr*/&fbusr,/*art*/pstri,T_fbusr_k,T_fbusr_l,/*TxBp*/&Tx,/*Txi*/T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt,/*wi*/1,/*Txi2*/-1,/*rottxt*/string(),/*wert*/-1,/*woher*/1);
-	opn<<new optcl(/*pname*/"fbpwd",/*pptr*/&fbpwd,/*art*/ppwd,T_fbpwd_k,T_fbpwd_l,/*TxBp*/&Tx,/*Txi*/T_verwendet_fuer_die_Fritzbox_das_Passwort_string,/*wi*/1,/*Txi2*/-1,/*rottxt*/string(),/*wert*/-1,/*woher*/1);
+	opn<<new optcl(/*pname*/"fbusr",/*pptr*/&fbusr,/*art*/pstri,T_fbusr_k,T_fbusr_l,/*TxBp*/&Tx,/*Txi*/T_verwendet_fuer_die_Fritzbox_den_Benutzer_string_anstatt,/*wi*/1,/*Txi2*/-1,/*rottxt*/string(),/*wert*/-1,/*woher*/1,Tx[T_Fritzbox_Benutzer]);
+	opn<<new optcl(/*pname*/"fbpwd",/*pptr*/&fbpwd,/*art*/ppwd,T_fbpwd_k,T_fbpwd_l,/*TxBp*/&Tx,/*Txi*/T_verwendet_fuer_die_Fritzbox_das_Passwort_string,/*wi*/1,/*Txi2*/-1,/*rottxt*/string(),/*wert*/-1,/*woher*/1,Tx[T_Fritzbox_Passwort],/*obno*/1,/*refstr*/&fbusr);
 	hcl::virtinitopt(); //α
 } // void hhcl::virtinitopt
 
@@ -172,30 +172,14 @@ void hhcl::neurf()
 {
 	for(auto omit=opn.schl.end();omit!=opn.schl.begin();) {
 		omit--;
-		if ((*omit)->Txrf!=-1) {
-		 const char* const text=(*(*omit)->TxBp)[(*omit)->Txrf];
-		cout<<text<<endl;
+		if (!(*omit)->Txtrf.empty()) {
+			const char* const text=(*omit)->Txtrf.c_str();
+			cout<<text<<endl;
 		}
 	}
 } // void hhcl::neurf
  //ω
-// aufgerufen in lauf //α
-void hhcl::virtrueckfragen()
-{
-	hLog(violetts+Tx[T_virtrueckfragen]+", rzf: "+blau+ltoan(rzf)+schwarz);
-	if (fbusr.empty() || fbpwd.empty()) rzf=1;
-	if (rzf) { //ω
-		fbusr=Tippstr(Tx[T_Fritzbox_Benutzer],&fbusr);
-		fbpwd.clear();
-		do {
-			fbpwd=Tippstr(string(Tx[T_Fritzbox_Passwort])+Txk[T_fuer_Benutzer]+dblau+fbusr+schwarz+"'"/*,&smtppwd*/);
-			fbpwd=Tippstr(string(Tx[T_Fritzbox_Passwort])+Txk[T_fuer_Benutzer]+dblau+fbusr+schwarz+"'"+" ("+Txk[T_erneute_Eingabe]+")"/*,&mpw2*/);
-		} while (fbpwd!=fbpwd);
-	} // if (rzf) //α
-	hcl::virtrueckfragen();
-	//// opn.oausgeb(rot);
-} // void hhcl::virtrueckfragen
-//ω
+
 //α
 // aufgerufen in lauf
 void hhcl::virtpruefweiteres()
@@ -238,11 +222,11 @@ void hhcl::pvirtnachvi()
 } //α
 
 // aufgerufen in lauf
-void hhcl::pvirtvorpruefggfmehrfach()
+void hhcl::pvirtnachrueckfragen()
 {
-	hLog(violetts+Tx[T_pvirtvorpruefggfmehrfach]+schwarz);
+	hLog(violetts+Tx[T_pvirtnachrueckfragen]+schwarz);
 	// if (initDB()) exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));  //ω
-} // void hhcl::pvirtvorpruefggfmehrfach //α
+} // void hhcl::pvirtnachrueckfragen //α
 //ω
 
 int tuwas()
