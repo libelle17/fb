@@ -229,9 +229,9 @@ void hhcl::pvirtnachrueckfragen()
 } // void hhcl::pvirtnachrueckfragen //α
 //ω
 
-int tuwas()
+int tuwas(const string fbusr,const string fbpwd)
 {
-	tr64cl tr64("libelle17","bach17raga");
+	tr64cl tr64(fbusr,fbpwd);
 //	tr64cl tr64("","");
 	string buffer;
 	string kopfi[]={"deviceType","friendlyName","manufacturer","manufacturerURL","modelDescription","modelName","modelNumber","modelURL","UDN"};
@@ -365,13 +365,13 @@ int tuwas()
 	} // 	while ((pos=holraus(buffer,"service",&serviceh,pos)))
 	if (oblog) logf.close();
 	return 0;
-} // int tuwas()
+} // int tuwas
 
 
 void hhcl::pvirtfuehraus() //α
 { 
 	hLog(violetts+Tx[T_pvirtfuehraus]+schwarz); //ω
-	tuwas();
+	tuwas(fbusr,fbpwd);
 } // void hhcl::pvirtfuehraus  //α
 
 // aufgerufen in lauf
